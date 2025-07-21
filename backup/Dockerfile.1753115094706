@@ -1,0 +1,37 @@
+FROM node:18-alpine AS build
+
+# Needed for sharp and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    vips-dev \
+    libc6-compat
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+RUN npm run build
+
+# --- Runtime image ---
+FROM node:18-alpine
+
+# Only required system lib for sharp
+RUN apk add --no-cache vips-dev
+
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Copy only built assets & minimal deps
+COPY --from=build /app /app
+COPY --from=build /app/node_modules /app/node_modules
+
+# Run as non-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && chown -R appuser:appgroup /app
+USER appuser
+
+EXPOSE 1337
+CMD ["npm", "run", "start"]
