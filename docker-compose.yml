@@ -1,7 +1,7 @@
 services:
   affshop-strapi:
     container_name: affshop-strapi
-    image: reksamur/affshop-strapi:latest
+    image: reksamur/affshop-strapi:dev
     restart: unless-stopped
     env_file: .env
     environment:
